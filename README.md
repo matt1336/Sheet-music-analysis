@@ -14,4 +14,4 @@ Extracts note/chord information from MIDI files and generates a heat map of note
 - CSV table with columns: Hand, NoteNames, MIDI, Duration(s), ChordSize, Measure, Velocity, BPM
 
 ## Note
-- A MIDI file may occasionally not specify left and right hand notes. In these cases, the program will only show one heat map and table for the "Right" hand — essentially it will combine the right and left into one hand.
+- MIDI files like to occasionally not specify left and right hand notes. In these cases, the program will only show one heat map and table for the "Right" hand — essentially it will combine the right and left into one hand.
