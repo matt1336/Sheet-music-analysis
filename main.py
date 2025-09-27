@@ -2,6 +2,7 @@ from tkinter import Tk, filedialog, messagebox
 from music21 import converter
 import matplotlib.pyplot as plt
 import pandas as pd
+import mplcursors  
 
 # Pick a MIDI file
 Tk().withdraw()
@@ -9,7 +10,6 @@ midi_path = filedialog.askopenfilename(
     filetypes=[("MIDI files", "*.mid *.midi"), ("All files", "*.*")]
 )
 score = converter.parse(midi_path)
-
 
 
 # Build tempo map
@@ -25,7 +25,6 @@ def get_tempo_at_offset(offset, tempo_map):
         if start <= offset < end:
             return bpm
     return tempo_map[-1][2]
-
 
 
 # Extract notes/chords from a hand
@@ -63,21 +62,18 @@ def hand_data(part, hand_label, tempo_map):
             ])
     return rows
 
+# Compute note density per measure
 
-
-# Compute heat per measure (weighted by chord size)
-
-def compute_heat_map(rows):
-    heat = {}
+def compute_note_density(rows):
+    density = {}
     for r in rows:
         measure = r[5]
-        dur = r[3] * r[4]  # weight by chord size
-        heat[measure] = heat.get(measure, 0) + dur
-    measures = sorted(heat.keys())
-    heat_values = [heat[m] for m in measures]
-    avg = sum(heat_values) / len(heat_values) if heat_values else 0
-    return measures, heat_values, avg
-
+        chord_size = r[4]
+        density[measure] = density.get(measure, 0) + chord_size
+    measures = sorted(density.keys())
+    values = [density[m] for m in measures]
+    avg = sum(values) / len(values) if values else 0
+    return measures, values, avg
 
 
 # Run data extraction
@@ -85,12 +81,10 @@ def compute_heat_map(rows):
 tempo_map = build_tempo_map(score)
 all_rows = []
 
-# Check for left hand
 has_left = len(score.parts) > 1
 if not has_left:
-    messagebox.showinfo("Info", "Left hand part not found. Only right hand will be shown.")
+    messagebox.showinfo("Info", "Only one part found. Showing a single heat map.")
 
-# Extract data for hands
 hands = ["Right", "Left"]
 hand_rows = {}
 hand_measures = {}
@@ -101,33 +95,52 @@ for idx, hand in enumerate(hands):
     if idx < len(score.parts):
         rows = hand_data(score.parts[idx], hand, tempo_map)
         all_rows.extend(rows)
-        meas, vals, avg = compute_heat_map(rows)
+        meas, vals, avg = compute_note_density(rows)
         hand_rows[hand] = rows
         hand_measures[hand] = meas
         hand_values[hand] = vals
         hand_avg[hand] = avg
 
 
+# Plot interactive heat maps
 
-# Plot heat maps
-
-fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
-axs[0].tick_params(axis='x', labelbottom=True)  # show x-axis labels on top subplot
+fig, axs = plt.subplots(len(hand_rows), 1, figsize=(14, 4*len(hand_rows)), sharex=True)
+if len(hand_rows) == 1:
+    axs = [axs]
 
 colors = {"Right": "orange", "Left": "skyblue"}
+bars_dict = {}
 
 for ax, hand in zip(axs, hands):
     if hand in hand_rows:
-        ax.bar(hand_measures[hand], hand_values[hand], color=colors[hand], alpha=0.7)
-        ax.axhline(hand_avg[hand], color='red', linestyle='--', label='Avg Density')
-        ax.set_ylabel("Weighted Sum Duration")
+        bars = ax.bar(hand_measures[hand], hand_values[hand], color=colors[hand], alpha=0.7)
+        ax.axhline(hand_avg[hand], color='red', linestyle='--', label='Avg Note Density')
+        ax.set_ylabel("Note Count")
         ax.set_title(f"{hand} Hand Heat Map")
         ax.legend()
+        ax.tick_params(axis='x', labelbottom=True)
+        bars_dict[hand] = bars
 
-axs[1].set_xlabel("Measure")
+axs[-1].set_xlabel("Measure")
 plt.tight_layout()
-plt.show()
 
+
+# Interactive hover
+
+cursor = mplcursors.cursor([bar for bars in bars_dict.values() for bar in bars], hover=True)
+@cursor.connect("add")
+def on_add(sel):
+    hand = None
+    for h, bars in bars_dict.items():
+        if sel.artist in bars:
+            hand = h
+            break
+    measure_idx = list(bars_dict[hand]).index(sel.artist)
+    measure = hand_measures[hand][measure_idx]
+    note_count = hand_values[hand][measure_idx]
+    sel.annotation.set_text(f"{hand} Hand\nMeasure {measure}\nNotes: {note_count}")
+
+plt.show()
 
 
 # Save dataset
