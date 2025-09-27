@@ -17,7 +17,7 @@ Also saves a CSV dataset of the score for analysis or AI applications.
 
 - **CSV table** with columns:  
   `Hand, NoteNames, MIDI, Duration(s), ChordSize, Measure, Velocity, BPM`
-
+Images/CSV.dataSet_example.png
 ## Additional Details
 
 - **Note Density Metric**:  
