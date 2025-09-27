@@ -12,8 +12,10 @@ Also saves a CSV dataset of the score for analysis or AI applications.
 ## Example Output
 
 - **Heat map per hand**  
-  - Separate graphs for Right and Left hands.  
-  - If the MIDI file has only one part, the program automatically combines both hands into a single heat map. Example below uses Chopin Ballade no.1 in G minor
+  - Separate graphs for Right and Left hands.
+![Example BothHands Heatmap](Images/Heatmap_both_hands.png)    
+  - If the MIDI file has only one part, the program automatically combines both hands into a single heat map.
+    ----Example below uses Chopin Ballade no.1 in G minor
 ![Example Combined Heatmap](Images/Heatmap_example.png)
 - **CSV table** with columns:  
   `Hand, NoteNames, MIDI, Duration(s), ChordSize, Measure, Velocity, BPM`
